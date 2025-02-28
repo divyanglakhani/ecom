@@ -14,6 +14,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import logo from "../../public/img/logo.png";
+
 type CartItem = {
   quantity: number;
 };
@@ -21,30 +22,37 @@ type CartItem = {
 const Header = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const [cartCount, setCartCount] = useState<number>(2);
+  const [cartCount, setCartCount] = useState<number>(0);
   const [isClient] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
-  useEffect(() => {
-    const updateCartCount = () => {
+  const updateCartCount = () => {
+    try {
       const storedCart = localStorage.getItem("cart");
       if (storedCart) {
-        const parsedCart = JSON.parse(storedCart);
+        const parsedCart: CartItem[] = JSON.parse(storedCart);
         const totalItems = parsedCart.reduce(
-          (sum: number, item: CartItem) => sum + item.quantity,
+          (sum, item) => sum + (item.quantity || 0),
           0
         );
         setCartCount(totalItems);
       } else {
-        setCartCount(2);
+        setCartCount(0);
       }
-    };
+    } catch (error) {
+      console.error("Error parsing cart data:", error);
+    }
+  };
 
+  useEffect(() => {
     updateCartCount();
 
-    window.addEventListener("storage", updateCartCount);
-    return () => window.removeEventListener("storage", updateCartCount);
+    window.addEventListener("cartUpdated", updateCartCount);
+
+    return () => {
+      window.removeEventListener("cartUpdated", updateCartCount);
+    };
   }, []);
 
   const goToCart = () => {
@@ -56,7 +64,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white  fixed top-0 left-0 w-full z-50">
+    <header className="bg-white fixed top-0 left-0 w-full z-50">
       <div className="flex items-center justify-between px-6 py-4">
         <div
           onClick={goToHome}
